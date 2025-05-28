@@ -79,3 +79,82 @@ export const logIn = async (req, res) =>{
     }
 }
 
+export const getAllUsers = async (req, res) =>{
+    try{
+        if (req.user.rol !== 'ADMIN'){
+            return res.status(400).json({
+                message: 'Acceso denegado! debes ser administrador.'
+            })
+        }
+        const usuarios = await Usuario.find().select('-password');
+        res.status(200).json(usuarios);
+    }catch(error){
+        return res.status(500).json({
+            message: 'Error al obtener todos los usuarios', error
+        })
+    }
+}
+
+export const getUserById = async (req,res) =>{
+    try{
+            const id = req.params.id;
+    if (id !== req.user.id && req.user.rol !== 'ADMIN'){
+        return res.status(400).json({
+            message: 'No tienes acceso a la informacion relacionada con este usuario.'
+        })
+    }
+    const usuario = await Usuario.findById(id).select('-password');
+    if (!usuario){
+        res.status(404).json({
+            message: 'Usuario no encontrado.'
+        })
+    }
+    res.json(usuario)
+    }catch (error) {
+    console.error('Error en getUserById:', error); // Agregado para debug
+    res.status(500).json({
+      message: 'Error al obtener el usuario solicitado',
+      error: error.message || error
+    });
+  }
+}
+
+export const updateUser = async (req,res) =>{
+    try{
+        const id = req.params.id;
+        if (id !== req.user.id){
+            return res.status(400).json({
+                message: 'No puedes modificar la información de otro usuario'
+            });
+        }
+        const {email, nombre} = req.body;
+        const usuarioActualizado = await Usuario.findByIdAndUpdate(
+            id,
+            {nombre, email},
+            {new: true}
+        ).select('-password')
+        res.json(usuarioActualizado)
+
+    }catch(error){
+        res.status(500).json({
+            message: 'Error al actualizar el usuario solicitado.', error: error.message
+        })
+    }
+}
+
+export const deleteUser = async (req,res) =>{
+    try{
+        if(req.user.rol !== 'ADMIN'){
+            return res.status(400).json({
+                message: 'No tienes permisos para eliminar usuarios'
+            });
+        }
+        const id = req.params.id;
+        await Usuario.findByIdAndDelete(id);
+        res.json({message: 'Usuario eliminado correctamente'})
+
+
+    }catch(error){
+        res.status(500).json({ error: 'Error al eliminar el usuario' , message: error.message});
+    }
+}
