@@ -4,7 +4,7 @@ import { authGuard } from './guards/auth.guard';
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: 'login',
+    redirectTo: 'tabs',
     pathMatch: 'full'
   },
   {
@@ -14,11 +14,6 @@ export const routes: Routes = [
   {
     path: 'register',
     loadComponent: () => import('./pages/register/register.page').then(m => m.RegisterPage)
-  },
-  {
-    path: 'welcome',
-    loadComponent: () => import('./pages/welcome/welcome.page').then(m => m.WelcomePage),
-    canActivate: [authGuard]
   },
   {
     path: 'tabs',

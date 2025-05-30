@@ -89,16 +89,16 @@ export class LoginPage {
       password: ['', [Validators.required]]
     });
   }
-
   onSubmit() {
     if (this.loginForm.invalid) {
       return;
     }
 
-    this.isLoading = true;    this.authService.login(this.loginForm.value).subscribe({
+    this.isLoading = true;
+    this.authService.login(this.loginForm.value).subscribe({
       next: (response) => {
         this.isLoading = false;
-        this.router.navigate(['/welcome']);
+        this.router.navigate(['/tabs/tab1']);
       },
       error: (error) => {
         this.isLoading = false;

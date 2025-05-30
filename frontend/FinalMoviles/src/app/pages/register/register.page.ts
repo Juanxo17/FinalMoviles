@@ -119,9 +119,8 @@ export class RegisterPage {
     }
 
     this.isLoading = true;    this.authService.register(this.registerForm.value).subscribe({
-      next: (response) => {
-        this.isLoading = false;
-        this.router.navigate(['/welcome']);
+      next: (response) => {        this.isLoading = false;
+        this.router.navigate(['/tabs/tab1']);
       },
       error: (error) => {
         this.isLoading = false;

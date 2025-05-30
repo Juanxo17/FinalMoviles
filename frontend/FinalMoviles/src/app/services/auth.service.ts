@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { User, LoginCredentials, RegisterCredentials, AuthResponse } from '../interfaces/user.interface';
 import { environment } from '../../environments/environment';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
@@ -13,7 +14,7 @@ export class AuthService {
   private tokenKey = 'auth_token';
   private userKey = 'user_data';
 
-  constructor(private http: HttpClient) { 
+  constructor(private http: HttpClient, private router: Router) { 
     this.loadStoredUser();
   }
 
@@ -58,29 +59,32 @@ export class AuthService {
           }
         })
       );
-  }
-  // Login de usuario
+  }  // Login de usuario
   login(credentials: LoginCredentials): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials)
       .pipe(
         tap(response => {
-          if (response.token) {
+          if (response.token && response.id) {
             // Primero almacenar el token
             localStorage.setItem(this.tokenKey, response.token);
             
-            // Crear un objeto de usuario básico con la información que tenemos
-            const basicUser: User = {
-              _id: response.id,
-              nombre: 'Usuario',  // Placeholder hasta que obtengamos los datos completos
-              email: credentials.email
-            };
-            
-            // Guardar datos básicos para que la app funcione mientras se carga el usuario completo
-            this.userSubject.next(basicUser);
-            localStorage.setItem(this.userKey, JSON.stringify(basicUser));
-            
-            // No intentar obtener el usuario completo aquí, ya que puede fallar
-            // La app utilizará los datos básicos inicialmente
+            // Cargar los datos completos del usuario
+            this.getUserById(response.id).subscribe({
+              next: (fullUser) => {
+                this.storeUserData(response.token!, fullUser);
+              },
+              error: (error) => {
+                console.error('Error cargando datos del usuario:', error);
+                // Fallback: crear usuario básico
+                const basicUser: User = {
+                  _id: response.id,
+                  nombre: 'Usuario',
+                  email: credentials.email,
+                  rol: 'USUARIO'
+                };
+                this.storeUserData(response.token!, basicUser);
+              }
+            });
           }
         })
       );
@@ -97,11 +101,23 @@ export class AuthService {
     localStorage.removeItem(this.userKey);
     this.userSubject.next(null);
   }
-
   // Almacenar datos del usuario y token
   private storeUserData(token: string, user: User): void {
     localStorage.setItem(this.tokenKey, token);
     localStorage.setItem(this.userKey, JSON.stringify(user));
     this.userSubject.next(user);
+  }
+
+  // Métodos para gestión de usuarios (admin)
+  getAllUsers(): Observable<User[]> {
+    return this.http.get<User[]>(`${this.apiUrl}/getAllUsers`);
+  }
+
+  updateUser(id: string, userData: Partial<User>): Observable<User> {
+    return this.http.put<User>(`${this.apiUrl}/updateUser/${id}`, userData);
+  }
+
+  deleteUser(id: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/deleteUser/${id}`);
   }
 }

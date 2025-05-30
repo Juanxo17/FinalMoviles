@@ -21,7 +21,7 @@ export class AppComponent implements OnInit {
   }  private async checkAuthState() {
     if (this.authStateService.isAuthenticated) {
       // Si el usuario está autenticado, redirigir a la página de bienvenida
-      this.router.navigate(['/welcome']);
+      this.router.navigate(['/tabs/tab1']);
     } else {
       // Si no está autenticado, redirigir al login
       this.router.navigate(['/login']);

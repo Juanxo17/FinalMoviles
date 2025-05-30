@@ -1,74 +1,129 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonLabel, IonSkeletonText, IonThumbnail, IonSpinner, IonRefresher, IonRefresherContent, IonIcon, IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonChip, IonButton, IonFab, IonFabButton, IonItemSliding, IonItemOptions, IonItemOption, AlertController, ToastController } from '@ionic/angular/standalone';
-import { RouterLink } from '@angular/router';
-import { ApiService } from '../services/api.service';
-import { AuthStateService } from '../services/auth-state.service';
-import { Pais } from '../interfaces/pais.interface';
-import { User } from '../interfaces/user.interface';
+import { FormsModule } from '@angular/forms';
+import { IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonLabel, 
+  IonSpinner, IonButton, IonIcon, IonCard, IonCardHeader, IonCardTitle, 
+  IonCardContent, IonBackButton, IonButtons, IonAlert, AlertController, 
+  ToastController, IonInput, IonFab, IonFabButton } from '@ionic/angular/standalone';
+import { RouterModule } from '@angular/router';
+import { ApiService } from '../../services/api.service';
+import { Pais } from 'src/app/interfaces/pais.interface';
 import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { addIcons } from 'ionicons';
-import { globe, business, people, location, restaurant, home, add, create, trash } from 'ionicons/icons';
+import { add, arrowBack, globe, create, trash } from 'ionicons/icons';
 
 @Component({
-  selector: 'app-tab2',
-  templateUrl: 'tab2.page.html',
-  styleUrls: ['tab2.page.scss'],
-  standalone: true,  imports: [
-    CommonModule, 
-    IonHeader, 
-    IonToolbar, 
-    IonTitle, 
-    IonContent, 
-    IonList, 
-    IonItem, 
-    IonLabel, 
-    IonSkeletonText, 
-    IonThumbnail, 
-    IonSpinner, 
-    IonRefresher, 
-    IonRefresherContent,
+  selector: 'app-admin-countries',
+  template: `
+    <ion-header>
+      <ion-toolbar color="primary">
+        <ion-buttons slot="start">
+          <ion-back-button defaultHref="/tabs/tab4"></ion-back-button>
+        </ion-buttons>
+        <ion-title>Gestión de Países</ion-title>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="ion-padding">
+      <div *ngIf="loading" class="ion-text-center">
+        <ion-spinner name="crescent"></ion-spinner>
+        <p>Cargando países...</p>
+      </div>
+
+      <div *ngIf="error" class="ion-padding ion-text-center">
+        <ion-icon name="alert-circle-outline" size="large" color="danger"></ion-icon>
+        <p>Error al cargar los países. Intenta de nuevo.</p>
+        <ion-button (click)="loadCountries()">Reintentar</ion-button>
+      </div>
+
+      <ion-card *ngIf="!loading && !error">
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="globe"></ion-icon>
+            Lista de Países
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-list *ngIf="paises.length > 0">
+            <ion-item *ngFor="let pais of paises">
+              <ion-label>
+                <h2>{{ pais.nombre }}</h2>
+              </ion-label>
+              <ion-button slot="end" fill="clear" color="primary" (click)="editCountry(pais)">
+                <ion-icon name="create"></ion-icon>
+              </ion-button>
+              <ion-button slot="end" fill="clear" color="danger" (click)="confirmDelete(pais)">
+                <ion-icon name="trash"></ion-icon>
+              </ion-button>
+            </ion-item>
+          </ion-list>
+          <div *ngIf="paises.length === 0" class="ion-text-center">
+            <p>No hay países registrados.</p>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+        <ion-fab-button (click)="openCreateCountryModal()">
+          <ion-icon name="add"></ion-icon>
+        </ion-fab-button>
+      </ion-fab>
+    </ion-content>
+  `,
+  styles: [`
+    ion-content {
+      --padding: 16px;
+    }
+    ion-item {
+      --padding-start: 0;
+    }
+  `],
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterModule,
+    IonHeader,
+    IonToolbar,
+    IonTitle,
+    IonContent,
+    IonList,
+    IonItem,
+    IonLabel,
+    IonSpinner,
+    IonButton,
     IonIcon,
     IonCard,
     IonCardHeader,
     IonCardTitle,
     IonCardContent,
-    IonChip,
-    IonButton,
+    IonBackButton,
+    IonButtons,
+    IonAlert,
+    IonInput,
     IonFab,
-    IonFabButton,
-    IonItemSliding,
-    IonItemOptions,
-    IonItemOption,
-    RouterLink
-  ],
+    IonFabButton
+  ]
 })
-export class Tab2Page implements OnInit {
+export class AdminCountriesPage implements OnInit {
   paises: Pais[] = [];
-  loading = true;
-  error = false;
-  section: 'paises' | 'ciudades' | 'famosos' | 'sitios' | 'platos' = 'paises';
-  selectedPais: Pais | null = null;
-  currentUser: User | null = null;
+  loading: boolean = true;
+  error: boolean = false;
 
   constructor(
     private apiService: ApiService,
-    private authStateService: AuthStateService,
     private alertController: AlertController,
     private toastController: ToastController
   ) {
-    addIcons({ globe, business, people, location, restaurant, home, add, create, trash });
+    addIcons({ add, arrowBack, globe, create, trash });
   }
 
   ngOnInit() {
-    this.authStateService.currentUser.subscribe(user => {
-      this.currentUser = user;
-    });
-    this.loadPaises();
+    this.loadCountries();
   }
 
-  loadPaises() {
+  loadCountries() {
     this.loading = true;
     this.error = false;
     
@@ -83,28 +138,6 @@ export class Tab2Page implements OnInit {
       this.paises = paises;
       this.loading = false;
     });
-  }
-
-  handleRefresh(event: any) {
-    setTimeout(() => {
-      this.loadPaises();
-      event.target.complete();
-    }, 1000);
-  }
-
-  selectPais(pais: Pais) {
-    this.selectedPais = pais;
-    this.section = 'ciudades';
-  }
-  goBack() {
-    if (this.section === 'ciudades') {
-      this.section = 'paises';
-      this.selectedPais = null;
-    }
-  }
-
-  get isAdmin(): boolean {
-    return this.currentUser?.rol === 'ADMIN';
   }
 
   async openCreateCountryModal() {
@@ -133,7 +166,6 @@ export class Tab2Page implements OnInit {
 
     await alert.present();
   }
-
   async createCountry(data: any) {
     if (!data.nombre) {
       const toast = await this.toastController.create({
@@ -167,7 +199,7 @@ export class Tab2Page implements OnInit {
           color: 'success'
         });
         await toast.present();
-        this.loadPaises();
+        this.loadCountries();
       }
     });
   }
@@ -191,7 +223,7 @@ export class Tab2Page implements OnInit {
         {
           text: 'Actualizar',
           handler: (data) => {
-            this.updateCountry(pais._id!, data);
+            this.updateCountry(pais._id, data);
           }
         }
       ]
@@ -199,7 +231,6 @@ export class Tab2Page implements OnInit {
 
     await alert.present();
   }
-
   async updateCountry(id: string, data: any) {
     if (!data.nombre) {
       const toast = await this.toastController.create({
@@ -233,12 +264,12 @@ export class Tab2Page implements OnInit {
           color: 'success'
         });
         await toast.present();
-        this.loadPaises();
+        this.loadCountries();
       }
     });
   }
 
-  async confirmDeleteCountry(pais: Pais) {
+  async confirmDelete(pais: Pais) {
     const alert = await this.alertController.create({
       header: 'Confirmar eliminación',
       message: `¿Estás seguro de que quieres eliminar el país ${pais.nombre}?`,
@@ -250,7 +281,7 @@ export class Tab2Page implements OnInit {
         {
           text: 'Eliminar',
           handler: () => {
-            this.deleteCountry(pais._id!);
+            this.deleteCountry(pais._id);
           }
         }
       ]
@@ -258,7 +289,6 @@ export class Tab2Page implements OnInit {
 
     await alert.present();
   }
-
   async deleteCountry(id: string) {
     this.apiService.deletePais(id).pipe(
       catchError(async error => {
@@ -273,7 +303,7 @@ export class Tab2Page implements OnInit {
         return of(null);
       })
     ).subscribe(async response => {
-      if (response !== null) {
+      if (response) {
         const toast = await this.toastController.create({
           message: 'País eliminado correctamente',
           duration: 2000,
@@ -281,7 +311,7 @@ export class Tab2Page implements OnInit {
           color: 'success'
         });
         await toast.present();
-        this.loadPaises();
+        this.loadCountries();
       }
     });
   }

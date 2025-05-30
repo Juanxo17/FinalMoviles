@@ -12,8 +12,12 @@
       <ion-title size="large">Perfil de Usuario</ion-title>
     </ion-toolbar>
   </ion-header>
+  <div *ngIf="loading" class="ion-padding ion-text-center">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Cargando perfil...</p>
+  </div>
 
-  <div *ngIf="currentUser" class="ion-padding">
+  <div *ngIf="!loading && currentUser" class="ion-padding">
     <ion-card>
       <ion-card-header>
         <ion-card-title>Información del Usuario</ion-card-title>
@@ -41,7 +45,35 @@
       </ion-card-content>
     </ion-card>
 
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="stats-chart"></ion-icon>
+          Resumen de Actividad
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list lines="none">
+          <ion-item>
+            <ion-icon name="bookmark" slot="start" color="primary"></ion-icon>
+            <ion-label>
+              <h3>Sitios Visitados</h3>
+              <p>{{ visitCount }} sitios</p>
+            </ion-label>
+          </ion-item>
+          <ion-item>
+            <ion-icon name="people" slot="start" color="secondary"></ion-icon>
+            <ion-label>
+              <h3>Encuentros con Famosos</h3>
+              <p>{{ tagCount }} encuentros</p>
+            </ion-label>
+          </ion-item>
+        </ion-list>
+      </ion-card-content>
+    </ion-card>
+
     <ion-button expand="block" color="danger" (click)="logout()" class="ion-margin-top">
+      <ion-icon name="log-out" slot="start"></ion-icon>
       Cerrar Sesión
     </ion-button>
   </div>

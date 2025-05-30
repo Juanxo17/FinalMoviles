@@ -1,19 +1,28 @@
-import { Component, EnvironmentInjector, inject } from '@angular/core';
+import { Component, EnvironmentInjector, inject, OnInit } from '@angular/core';
 import { IonTabs, IonTabBar, IonTabButton, IonIcon, IonLabel } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { person, location, restaurant } from 'ionicons/icons';
+import { person, earth, bookmark, settings } from 'ionicons/icons';
+import { CommonModule } from '@angular/common';
+import { AuthStateService } from '../services/auth-state.service';
 
 @Component({
   selector: 'app-tabs',
   templateUrl: 'tabs.page.html',
   styleUrls: ['tabs.page.scss'],
   standalone: true,
-  imports: [IonTabs, IonTabBar, IonTabButton, IonIcon, IonLabel],
+  imports: [IonTabs, IonTabBar, IonTabButton, IonIcon, IonLabel, CommonModule],
 })
-export class TabsPage {
+export class TabsPage implements OnInit {
   public environmentInjector = inject(EnvironmentInjector);
+  isAdmin = false;
 
-  constructor() {
-    addIcons({ person, location, restaurant });
+  constructor(private authStateService: AuthStateService) {
+    addIcons({ person, earth, bookmark, settings });
+  }
+
+  ngOnInit() {
+    this.authStateService.currentUser.subscribe(user => {
+      this.isAdmin = user?.rol === 'ADMIN';
+    });
   }
 }
