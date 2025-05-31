@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { Pais } from '../interfaces/pais.interface';
 import { Ciudad } from '../interfaces/ciudad.interface';
@@ -29,6 +29,12 @@ export interface Visita {
   usuario: string;
   sitio: Sitio | string;
   createdAt?: Date;
+  imagenes?: string[];
+  ubicacion?: {
+    type: string;
+    coordinates: number[];  // [longitud, latitud]
+  };
+  locationName?: string;  // Add this line
 }
 
 export interface Tag {
@@ -43,6 +49,16 @@ export interface Tag {
     lng: number;
   };
   createdAt?: Date;
+}
+
+export interface GeoLocation {
+  display_name: string;
+  address: {
+    city?: string;
+    town?: string;
+    state?: string;
+    country?: string;
+  };
 }
 
 @Injectable({
@@ -186,8 +202,16 @@ export class ApiService {
     return this.http.get<Visita[]>(`${this.apiUrl}/myVisitas`);
   }
 
-  createVisita(sitioId: string): Observable<Visita> {
-    return this.http.post<Visita>(`${this.apiUrl}/createVisita`, { sitioId });
+  createVisita(sitioId: string, imageBase64?: string, location?: { lat: number, lng: number }): Observable<Visita> {
+    const data = {
+      sitioId,
+      imagen: imageBase64,
+      ubicacion: location ? {
+        type: 'Point',
+        coordinates: [location.lng, location.lat]
+      } : undefined
+    };
+    return this.http.post<Visita>(`${this.apiUrl}/createVisita`, data);
   }
 
   // Tags
@@ -214,5 +238,24 @@ export class ApiService {
 
   getTagsPorSitio(): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/tagsPorSitio`);
+  }
+
+  getLocationInfo(lat: number, lon: number): Observable<GeoLocation> {
+    if (!lat || !lon) {
+      return of({ display_name: '', address: {} });
+    }
+    
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
+    return this.http.get<GeoLocation>(url, {
+      headers: {
+        'Accept-Language': 'es',
+        'User-Agent': 'FinalMovilesApp/1.0'
+      }
+    }).pipe(
+      catchError(error => {
+        console.error('Error getting location info:', error);
+        return of({ display_name: '', address: {} });
+      })
+    );
   }
 }

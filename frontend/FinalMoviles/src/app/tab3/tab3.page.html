@@ -43,6 +43,19 @@
             <ion-icon name="calendar" size="small"></ion-icon>
             {{ visita.fechaVisita | date:'mediumDate' }}
           </p>
+          <p *ngIf="visita.imagenes?.length">
+            <ion-icon name="camera" size="small"></ion-icon>
+            Visita con foto
+          </p>
+          <p *ngIf="visita.ubicacion?.coordinates">
+            <ion-icon name="navigate" size="small"></ion-icon>
+            {{ visita.locationName || 'Obteniendo ubicación...' }}
+            <br>
+            <small>
+              Lat: {{visita.ubicacion?.coordinates?.[1] | number:'1.0-6'}}, 
+              Lon: {{visita.ubicacion?.coordinates?.[0] | number:'1.0-6'}}
+            </small>
+          </p>
         </ion-label>
         <ion-icon name="chevron-forward" slot="end"></ion-icon>
       </ion-item>

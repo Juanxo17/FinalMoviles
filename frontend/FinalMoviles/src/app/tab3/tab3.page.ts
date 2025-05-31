@@ -8,10 +8,14 @@ import { IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonLabel
   IonSegmentButton, IonRefresher, IonRefresherContent } from '@ionic/angular/standalone';
 import { ApiService, Visita, Tag } from '../services/api.service';
 import { AuthStateService } from '../services/auth-state.service';
-import { catchError, forkJoin } from 'rxjs';
-import { of } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 import { addIcons } from 'ionicons';
 import { bookmark, people, calendar, location, time } from 'ionicons/icons';
+import { map } from 'rxjs/operators';
+
+interface VisitaWithLocation extends Visita {
+  locationName?: string;
+}
 
 @Component({
   selector: 'app-tab3',
@@ -47,7 +51,7 @@ import { bookmark, people, calendar, location, time } from 'ionicons/icons';
 })
 export class Tab3Page implements OnInit {
   segment: 'visitas' | 'tags' = 'visitas';
-  visitas: Visita[] = [];
+  visitas: VisitaWithLocation[] = [];
   tags: Tag[] = [];
   loading: boolean = true;
   error: boolean = false;
@@ -87,8 +91,9 @@ export class Tab3Page implements OnInit {
     
     forkJoin([visitas$, tags$]).subscribe({
       next: ([visitas, tags]) => {
-        this.visitas = visitas;
+        this.visitas = visitas as VisitaWithLocation[];
         this.tags = tags;
+        this.loadVisitas();
         this.loading = false;
       },
       error: (error) => {
@@ -98,7 +103,45 @@ export class Tab3Page implements OnInit {
       }
     });
   }
-    handleRefresh(event: any) {
+  
+  loadVisitas() {
+    this.apiService.getVisitas().subscribe(visitas => {
+      this.visitas = visitas;
+      
+      this.visitas.forEach(visita => {
+        if (visita.ubicacion?.coordinates && 
+            visita.ubicacion.coordinates.length >= 2) {
+          const [lon, lat] = visita.ubicacion.coordinates;
+          if (typeof lat === 'number' && typeof lon === 'number') {
+            this.apiService.getLocationInfo(lat, lon)
+              .pipe(
+                catchError(error => {
+                  console.error('Error fetching location:', error);
+                  return of({ display_name: '', address: {} });
+                })
+              )
+              .subscribe(location => {
+                if ('address' in location && location.address) {
+                  const address = location.address;
+                  const city = 'city' in address ? address.city : 
+                              'town' in address ? address.town : '';
+                  const state = 'state' in address ? address.state : '';
+                  const country = 'country' in address ? address.country : '';
+                
+                  visita.locationName = [city, state, country]
+                    .filter(part => part)
+                    .join(', ') || 'Ubicación no disponible';
+                } else {
+                  visita.locationName = 'Ubicación no disponible';
+                }
+              });
+          }
+        }
+      });
+    });
+  }
+
+  handleRefresh(event: any) {
     this.loadData();
     setTimeout(() => {
       event.target.complete();

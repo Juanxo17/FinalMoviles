@@ -12,6 +12,8 @@ import { catchError, forkJoin, switchMap } from 'rxjs';
 import { of } from 'rxjs';
 import { addIcons } from 'ionicons';
 import { location, restaurant, arrowBack, bookmark, star, starOutline, people } from 'ionicons/icons';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Geolocation } from '@capacitor/geolocation';
 
 @Component({
   selector: 'app-site-detail',
@@ -164,29 +166,92 @@ export class SiteDetailPage implements OnInit {
   }
 
   async registrarVisita() {
-    if (!this.sitioId) {
-      return;
-    }
+    if (!this.sitioId) return;
 
+    const alert = await this.alertController.create({
+      header: 'Registrar Visita',
+      message: '¿Deseas incluir una foto en el registro de la visita?',
+      buttons: [
+        {
+          text: 'Sin Foto',
+          handler: () => this.registrarVisitaSinFoto()
+        },
+        {
+          text: 'Con Foto',
+          handler: () => this.registrarVisitaConFoto()
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  private async registrarVisitaSinFoto() {
     try {
-      const visita = await this.apiService.createVisita(this.sitioId).toPromise();
-      const toast = await this.toastController.create({
-        message: 'Visita registrada correctamente',
-        duration: 2000,
-        position: 'top',
-        color: 'success'
-      });
-      await toast.present();
+      const position = await Geolocation.getCurrentPosition();
+      const visita = await this.apiService.createVisita(
+        this.sitioId, 
+        undefined, 
+        {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        }
+      ).toPromise();
+
+      await this.mostrarMensajeExito('Visita registrada correctamente');
     } catch (error) {
       console.error('Error al registrar visita:', error);
-      const toast = await this.toastController.create({
-        message: 'Error al registrar la visita',
-        duration: 2000,
-        position: 'top',
-        color: 'danger'
-      });
-      await toast.present();
+      await this.mostrarMensajeError();
     }
+  }
+
+  private async registrarVisitaConFoto() {
+    try {
+      const image = await Camera.getPhoto({
+        quality: 50, // Reducir calidad
+        allowEditing: true,
+        resultType: CameraResultType.Base64,
+        source: CameraSource.Camera,
+        width: 1024, // Limitar ancho
+        height: 1024, // Limitar alto
+        correctOrientation: true
+      });
+
+      const position = await Geolocation.getCurrentPosition();
+      const visita = await this.apiService.createVisita(
+        this.sitioId, 
+        image.base64String, 
+        {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        }
+      ).toPromise();
+
+      await this.mostrarMensajeExito('Visita registrada correctamente con foto');
+    } catch (error) {
+      console.error('Error al registrar visita:', error);
+      await this.mostrarMensajeError();
+    }
+  }
+
+  private async mostrarMensajeExito(mensaje: string) {
+    const toast = await this.toastController.create({
+      message: mensaje,
+      duration: 2000,
+      position: 'top',
+      color: 'success'
+    });
+    await toast.present();
+  }
+
+  private async mostrarMensajeError() {
+    const toast = await this.toastController.create({
+      message: 'Error al registrar la visita',
+      duration: 2000,
+      position: 'top',
+      color: 'danger'
+    });
+    await toast.present();
   }
 
   async crearTag() {

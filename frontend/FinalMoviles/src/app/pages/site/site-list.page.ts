@@ -12,7 +12,7 @@ import { User } from '../../interfaces/user.interface';
 import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { addIcons } from 'ionicons';
-import { location, arrowBack, add, create, trash } from 'ionicons/icons';
+import { location, arrowBack, add, create, trash, heart, heartOutline } from 'ionicons/icons';
 
 @Component({
   selector: 'app-site-list',
@@ -36,15 +36,21 @@ import { location, arrowBack, add, create, trash } from 'ionicons/icons';
         <ion-icon name="alert-circle-outline" size="large" color="danger"></ion-icon>
         <p>Error al cargar los sitios. Intenta de nuevo.</p>
         <ion-button (click)="loadSitios()">Reintentar</ion-button>
-      </div>      <ion-list *ngIf="!loading && !error">
-        <ion-item-sliding *ngFor="let sitio of sitios">
-          <ion-item [routerLink]="['/tabs/sitio', sitio._id]">
-            <ion-icon name="location" slot="start"></ion-icon>
-            <ion-label>
-              <h2>{{ sitio.nombre }}</h2>
-              <p *ngIf="sitio.tipo">{{ sitio.tipo }}</p>
-            </ion-label>
-          </ion-item>
+      </div>     <ion-list *ngIf="!loading && !error">
+      <ion-item-sliding *ngFor="let sitio of sitios">
+        <ion-item [routerLink]="['/tabs/sitio', sitio._id]">
+          <ion-icon name="location" slot="start"></ion-icon>
+          <ion-label>
+            <h2>{{ sitio.nombre }}</h2>
+            <p *ngIf="sitio.tipo">{{ sitio.tipo }}</p>
+          </ion-label>
+          <ion-button fill="clear" slot="end" (click)="toggleFavorite(sitio, $event)">
+            <ion-icon 
+              [name]="isFavorite(sitio) ? 'heart' : 'heart-outline'"
+              [color]="isFavorite(sitio) ? 'danger' : 'medium'">
+            </ion-icon>
+          </ion-button>
+        </ion-item>
           
           <!-- Admin options for editing/deleting sites -->
           <ion-item-options side="end" *ngIf="isAdmin">
@@ -122,7 +128,7 @@ export class SiteListPage implements OnInit {
     private alertController: AlertController,
     private toastController: ToastController
   ) {
-    addIcons({ location, arrowBack, add, create, trash });
+    addIcons({ location, arrowBack, add, create, trash, heart, heartOutline });
   }  ngOnInit() {
     this.authStateService.currentUser.subscribe(user => {
       this.currentUser = user;
@@ -431,5 +437,35 @@ export class SiteListPage implements OnInit {
         this.loadSitios();
       }
     });
+  }
+
+  isFavorite(sitio: Sitio): boolean {
+    const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+    return favorites.some((site: Sitio) => site._id === sitio._id);
+  }
+
+  toggleFavorite(sitio: Sitio, event: Event) {
+    event.stopPropagation(); // Prevent navigation when clicking the heart
+    const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+    const index = favorites.findIndex((site: Sitio) => site._id === sitio._id);
+    
+    if (index > -1) {
+      favorites.splice(index, 1);
+      this.showToast('Sitio eliminado de favoritos');
+    } else {
+      favorites.push(sitio);
+      this.showToast('Sitio añadido a favoritos');
+    }
+    
+    localStorage.setItem('favorites', JSON.stringify(favorites));
+  }
+
+  async showToast(message: string) {
+    const toast = await this.toastController.create({
+      message: message,
+      duration: 2000,
+      position: 'top'
+    });
+    toast.present();
   }
 }
