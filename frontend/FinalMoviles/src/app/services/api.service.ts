@@ -119,7 +119,7 @@ export class ApiService {
     return this.http.get<Famoso[]>(`${this.apiUrl}/getFamosos?ciudad=${ciudadId}`);
   }
 
-  createFamoso(data: { nombre: string; actividadFama: string; ciudadNacimiento?: string }): Observable<Famoso> {
+  createFamoso(data: { nombre: string;  ciudadNacimiento?: string; actividadFama: string;}): Observable<Famoso> {
     return this.http.post<Famoso>(`${this.apiUrl}/createFamoso`, data);
   }
 

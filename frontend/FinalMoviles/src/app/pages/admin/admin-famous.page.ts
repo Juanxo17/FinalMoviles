@@ -88,6 +88,7 @@ export class AdminFamousPage implements OnInit {
   famosos: Famoso[] = [];
   loading = true;
   error = false;
+  actividadesFama = ['Deportista', 'Actor', 'Político', 'Músico', 'Influencer', 'Otro'];
 
   constructor(
     private apiService: ApiService,
@@ -125,6 +126,11 @@ export class AdminFamousPage implements OnInit {
           name: 'nombre',
           type: 'text',
           placeholder: 'Nombre'
+        },
+        {
+          name: 'ciudadNacimiento',
+          type: 'text',
+          placeholder: 'Ciudad de Nacimiento (ID o Nombre)'
         },
         {
           name: 'actividadFama',
@@ -169,6 +175,12 @@ export class AdminFamousPage implements OnInit {
           type: 'text',
           value: famoso.nombre,
           placeholder: 'Nombre'
+        },
+        {
+          name: 'ciudadNacimiento',
+          type: 'text',
+          value: typeof famoso.ciudadNacimiento === 'string' ? famoso.ciudadNacimiento : famoso.ciudadNacimiento._id,
+          placeholder: 'Ciudad de Nacimiento (ID o Nombre)'
         },
         {
           name: 'actividadFama',

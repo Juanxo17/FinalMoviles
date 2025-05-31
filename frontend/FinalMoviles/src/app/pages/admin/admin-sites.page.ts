@@ -85,6 +85,7 @@ import { add, arrowBack, location, create, trash } from 'ionicons/icons';
 })
 export class AdminSitesPage implements OnInit {
   sites: Sitio[] = [];
+  cities: any[] = [];
   loading = true;
   error = false;
 
@@ -98,6 +99,19 @@ export class AdminSitesPage implements OnInit {
 
   ngOnInit() {
     this.loadSites();
+    this.loadCities
+  }
+
+  loadCities() {
+  this.apiService.getCiudades().subscribe({
+    next: (cities) => {
+      this.cities = cities;
+    },
+    error: (error) => {
+      console.error('Error loading cities:', error);
+      this.showToast('Error al cargar las ciudades');
+    }
+  });
   }
 
   loadSites() {
