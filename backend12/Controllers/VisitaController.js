@@ -4,14 +4,16 @@ import Usuario from "../models/Usuario.js";
 
 export const createVisita = async (req, res) => {
     try {
-        const { sitioId } = req.body;
+        const { sitioId, imagen, ubicacion } = req.body;
         const sitio = await Sitio.findById(sitioId);
         if (!sitio) return res.status(404).json({ message: 'Sitio no encontrado' });
 
         const nuevaVisita = new Visita({
             usuario: req.user.id,
             sitio: sitioId,
-            fecha: new Date()
+            fechaVisita: new Date(),
+            imagenes: imagen ? [imagen] : [],
+            ubicacion: ubicacion || undefined
         });
         await nuevaVisita.save();
         res.status(201).json(nuevaVisita);

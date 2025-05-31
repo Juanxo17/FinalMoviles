@@ -5,6 +5,10 @@ const sitioSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    tipo: {
+        type: String,
+        required: true
+    },
     ciudad: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Ciudad',

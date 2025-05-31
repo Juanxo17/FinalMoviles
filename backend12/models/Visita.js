@@ -14,6 +14,21 @@ const visitaSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Sitio',
         required: true
+    },
+    imagenes: [{
+        type: String,
+        required: false
+    }],
+    ubicacion: {
+        type: {
+            type: String,
+            enum: ['Point'], // 'Point' para GeoJSON
+            required: false
+        },
+        coordinates: {
+            type: [Number], // [longitud, latitud]
+            required: false
+        }
     }
 }, {
     timestamps: true

@@ -6,18 +6,18 @@ export const createFamoso = async (req, res) => {
     if (req.user.rol !== 'ADMIN') {
       return res.status(400).json({ message: 'No tienes permisos para crear personas famosas' });
     }
-    const { nombre, profesion, ciudad } = req.body;
-    if (!nombre || !profesion || !ciudad) {
+    const { nombre, ciudadNacimiento, actividadFama } = req.body;
+    if (!nombre || !ciudadNacimiento || !actividadFama) {
       return res.status(400).json({ message: 'Faltan campos requeridos' });
     }
-    const ciudadDoc = await Ciudad.findOne({ nombre: ciudad });
+    const ciudadDoc = await Ciudad.findOne({ nombre: ciudadNacimiento });
     if (!ciudadDoc) {
       return res.status(404).json({ message: 'La ciudad especificada no existe' });
     }
     const nuevoFamoso = new Famoso({
       nombre,
-      profesion,
-      ciudad: ciudadDoc._id
+      ciudadNacimiento: ciudadDoc._id,
+      actividadFama
     });
     await nuevoFamoso.save();
     res.status(201).json({ message: 'Famoso creado exitosamente', famoso: nuevoFamoso });
@@ -28,7 +28,7 @@ export const createFamoso = async (req, res) => {
 
 export const getFamosos = async (req, res) => {
   try {
-    const famosos = await Famoso.find().populate('ciudad');
+    const famosos = await Famoso.find().populate('ciudadNacimiento');
     res.json(famosos);
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener famosos', error: error.message });
@@ -38,7 +38,7 @@ export const getFamosos = async (req, res) => {
 export const getFamosoById = async (req, res) => {
   try {
     const { id } = req.params;
-    const famoso = await Famoso.findById(id).populate('ciudad');
+    const famoso = await Famoso.findById(id).populate('ciudadNacimiento');
     if (!famoso) {
       return res.status(404).json({ message: 'Famoso no encontrado' });
     }
@@ -54,18 +54,18 @@ export const updateFamoso = async (req, res) => {
       return res.status(400).json({ message: 'No tienes permisos para actualizar famosos' });
     }
     const { id } = req.params;
-    const { nombre, profesion, ciudad } = req.body;
+    const { nombre, ciudadNacimiento, actividadFama } = req.body;
     let ciudadDoc = null;
-    if (ciudad) {
-      ciudadDoc = await Ciudad.findOne({ nombre: ciudad });
+    if (ciudadNacimiento) {
+      ciudadDoc = await Ciudad.findOne({ nombre: ciudadNacimiento });
       if (!ciudadDoc) {
         return res.status(404).json({ message: 'La ciudad especificada no existe' });
       }
     }
     const datosActualizados = {
       ...(nombre && { nombre }),
-      ...(profesion && { profesion }),
-      ...(ciudadDoc && { ciudad: ciudadDoc._id })
+      ...(ciudadDoc && { ciudadNacimiento: ciudadDoc._id }),
+      ...(actividadFama && { actividadFama }),
     };
     const famosoActualizado = await Famoso.findByIdAndUpdate(id, datosActualizados, { new: true });
     res.json(famosoActualizado);
